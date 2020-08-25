@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:weightSum="1"
+    android:padding="8dp">
+    <TextView
+        android:id="@+id/textViewDate"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        tools:text="5.3.1997"
+        android:gravity="center"/>
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="8dp">
+        <TextView
+            android:id="@+id/textViewReason"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            tools:text="Uplata za nesto"
+            android:textAppearance="@style/TextAppearance.AppCompat.Light.SearchResult.Title"/>
+        <TextView
+            android:id="@+id/textViewAccountId"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            tools:text="ID: 1234567890" />
+    </LinearLayout>
+    <TextView
+        android:id="@+id/textViewAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_weight="0.3"
+        tools:text="-1500.00"
+        android:gravity="end|center_vertical"
+        android:textColor="@color/colorTextTransactionAmount"/>
+</LinearLayout>

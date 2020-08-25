@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "870102485930",
+    "firebase_url": "https://my-bank-f8b4f.firebaseio.com",
+    "project_id": "my-bank-f8b4f",
+    "storage_bucket": "my-bank-f8b4f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870102485930:android:c5d51af031186a752139d3",
+        "android_client_info": {
+          "package_name": "com.ana.mybank"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "870102485930-d1uqhnja3rl1be662nlnj5s005l7bac5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ana.mybank",
+            "certificate_hash": "da83bd810101be0798c85efda1a3796c3eedfe3a"
+          }
+        },
+        {
+          "client_id": "870102485930-ig8fobov5ehuvml1kgk25t8fuqd5b87v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-Y-Gi_3-rSQtSdWWDES3jdNEloeIn2cE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "870102485930-ig8fobov5ehuvml1kgk25t8fuqd5b87v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
