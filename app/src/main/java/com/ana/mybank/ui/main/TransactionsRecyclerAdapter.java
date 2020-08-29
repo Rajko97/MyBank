@@ -1,6 +1,6 @@
 package com.ana.mybank.ui.main;
 
-import android.text.format.DateFormat;
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +16,6 @@ import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static com.ana.mybank.Constants.getMoneyFormat;
@@ -40,6 +39,7 @@ public class TransactionsRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
             tvTime = itemView.findViewById(R.id.textViewDate);
         }
 
+        @SuppressLint("SetTextI18n")
         void bind(TransactionPojo transactionData) {
             tvAccountId.setText("ID: "+transactionData.getAccountId());
             tvAmount.setText("-"+getMoneyFormat(transactionData.getAmount()));
@@ -47,9 +47,9 @@ public class TransactionsRecyclerAdapter extends RecyclerView.Adapter<RecyclerVi
             tvTime.setText(getFormattedDate(transactionData.getTime()));
         }
 
+        @SuppressLint("SimpleDateFormat")
         private String getFormattedDate(Timestamp time) {
-            Date date = time.toDate();
-            return new SimpleDateFormat("dd-MM-yy\nhh:mm").format(date);
+            return new SimpleDateFormat("dd-MM-yy\nhh:mm").format(time.toDate());
         }
     }
     @NonNull

@@ -3,6 +3,7 @@ package com.ana.mybank.ui.login;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -27,6 +28,8 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseUser;
 
+import java.util.Objects;
+
 public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
     private FirebaseAuth mAuth;
     private TextInputLayout layoutEmail, layoutPassword;
@@ -43,7 +46,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     private void checkIfIsUserLoggedIn() {
         mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() != null) {
-            startNextActivity();
+            startNextActivity(mAuth.getCurrentUser());
         }
     }
 
@@ -64,9 +67,10 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void doValidation() {
-        String email = editEmail.getText().toString();
-        String password = editPassword.getText().toString();
+        String email = Objects.requireNonNull(editEmail.getText()).toString();
+        String password = Objects.requireNonNull(editPassword.getText()).toString();
 
         boolean isEmailValid = validateEmail(email);
         boolean isPasswordValid = validatePassword(password);
@@ -104,6 +108,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
     private void signInExistingUser(final String email, final String password) {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @SuppressLint("SetTextI18n")
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
@@ -111,7 +116,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                             {
                                 setNewPassword(email);
                             } else {
-                                startNextActivity();
+                                startNextActivity(Objects.requireNonNull(mAuth.getCurrentUser()));
                             }
                         } else {
                             if(task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
@@ -137,6 +142,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                                 final FirebaseUser user = mAuth.getCurrentUser();
 
                                 AuthCredential credential = EmailAuthProvider.getCredential(email, Constants.DEFAULT_PASSWORDS);
+                                if(user != null)
                                 user.reauthenticate(credential)
                                         .addOnCompleteListener(new OnCompleteListener<Void>() {
                                             @Override
@@ -146,7 +152,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                                                         @Override
                                                         public void onComplete(@NonNull Task<Void> task) {
                                                             if (task.isSuccessful()) {
-                                                                startNextActivity();
+                                                                startNextActivity(user);
                                                             } else {
                                                                 Toast.makeText(getApplicationContext(), "Failed to set new password", Toast.LENGTH_SHORT).show();
                                                             }
@@ -159,13 +165,14 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                                         });
                             }
                         };
+                        dialog.setCancelable(false);
                         dialog.show();
                     }
                 });
     }
 
-    private void startNextActivity() {
-        if(isUserAdmin(mAuth.getCurrentUser())) {
+    private void startNextActivity(@NonNull FirebaseUser user) {
+        if(isUserAdmin(user)) {
             startActivity(new Intent(LoginActivity.this, AdminActivity.class));
         } else {
             startActivity(new Intent(LoginActivity.this, MainActivity.class));

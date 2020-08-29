@@ -111,19 +111,20 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
                     userData.put("securityCode", cardPin);
                     userData.put("balance", 0);
 
-                createNewUser(email, Constants.DEFAULT_PASSWORDS, userData);
+                createNewFirebaseUser(email, Constants.DEFAULT_PASSWORDS, userData);
             }
         }
     }
 
-    private void createNewUser(String email, String password, final Map<String, Object> userData) {
+    //Creates Firebase user
+    private void createNewFirebaseUser(String email, String password, final Map<String, Object> userData) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             FirebaseUser user = mAuth.getCurrentUser();
-                            sendDbRequest(user.getUid(), userData);
+                            initializeNewFirestoreUser(user.getUid(), userData);
                         } else {
                             submitButton.setEnabled(true);
                             submitButton.setText("SUBMIT");
@@ -133,35 +134,28 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
                 });
     }
 
-    private void sendDbRequest(String uid, Map<String, Object> userData) {
+    //creates Users/newDocument /CreditCards/newDocument
+    private void initializeNewFirestoreUser(String uid, Map<String, Object> userData) {
         String securityCode = (String) userData.get("securityCode");
         String cardNumber = (String) userData.get("cardNumber");
         userData.remove("securityCode");
 
-        db.collection("Users")
-                .document(uid)
-                .set(userData)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
+        db.collection("Users").document(uid).set(userData)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
-                    public void onSuccess(Void aVoid) {
-                       submitButton.setEnabled(true);
-                       submitButton.setText("SUBMIT");
-                       Toast.makeText(AdminActivity.this, "User successfully created", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
+                    public void onComplete(@NonNull Task<Void> task) {
                         submitButton.setEnabled(true);
                         submitButton.setText("SUBMIT");
-                        Toast.makeText(AdminActivity.this, "Failed to create user", Toast.LENGTH_SHORT).show();
+                        if(task.isSuccessful()) {
+                            Toast.makeText(AdminActivity.this, "User successfully created", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(AdminActivity.this, "Failed to create user", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
         userData.clear();
         userData.put("securityCode", securityCode);
-        db.collection("CreditCards")
-                .document(cardNumber)
-                .set(userData);
+        db.collection("CreditCards").document(cardNumber).set(userData);
     }
 
     private boolean validateName(String name) {

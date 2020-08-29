@@ -15,6 +15,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
 import com.ana.mybank.R;
 import com.ana.mybank.model.TransactionPojo;
@@ -33,10 +34,8 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
+import java.util.IllegalFormatConversionException;
 import java.util.List;
 
 import static com.ana.mybank.Constants.getMoneyFormat;
@@ -55,6 +54,14 @@ public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuIte
         getDataFromFireStore();
     }
 
+    protected void onCreateTest(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main_new);
+        SliderAdapter sliderAdapter = new SliderAdapter(MainActivity.this);
+        ViewPager slideViewPager = (ViewPager) findViewById(R.id.sliderLayout);
+        slideViewPager.setAdapter(sliderAdapter);
+    }
+
     private void getDataFromFireStore() {
         final DocumentReference docRef = db.collection("Users").document(mAuth.getUid());
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
@@ -64,14 +71,13 @@ public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuIte
                     DocumentSnapshot document = task.getResult();
                     if (document.exists()) {
                         try {
-                            JSONObject object = new JSONObject(document.getData().toString());
-                            String name = object.getString("name");
-                            String lastName = object.getString("lastName");
-                            String accountNumber = object.getString("accountNumber");
-                            String cardNumber = object.getString("cardNumber");
-                            Double balance = object.getDouble("balance");
+                            String name = (String) document.getData().get("name");
+                            String lastName =  (String) document.getData().get("lastName");
+                            String accountNumber =  (String) document.getData().get("accountNumber");
+                            String cardNumber =  (String) document.getData().get("cardNumber");
+                            Double balance = Double.valueOf(document.getData().get("balance").toString());
                             initializeView(name, lastName, accountNumber, cardNumber, balance, docRef);
-                        } catch (JSONException e) {
+                        } catch (IllegalFormatConversionException e) {
                             Toast.makeText(getApplicationContext(), "Failed to parse user data", Toast.LENGTH_SHORT).show();
                             logout();
                         }
@@ -86,6 +92,8 @@ public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuIte
             }
         });
     }
+
+
 
     private void initializeView(String name, String lastName, String accountNumber, String cardNumber, final double balance, DocumentReference docRef) {
         setContentView(R.layout.activity_main);
