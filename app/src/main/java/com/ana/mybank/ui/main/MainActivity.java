@@ -4,23 +4,20 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.AppCompatTextView;
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import com.ana.mybank.R;
-import com.ana.mybank.model.TransactionPojo;
+import com.ana.mybank.model.CreditCards;
+import com.ana.mybank.model.UserPojo;
 import com.ana.mybank.ui.login.LoginActivity;
-import com.example.creditcardlibrary.view.CustomCreditCard;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -35,7 +32,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 
 import java.util.ArrayList;
-import java.util.IllegalFormatConversionException;
 import java.util.List;
 
 import static com.ana.mybank.Constants.getMoneyFormat;
@@ -43,26 +39,21 @@ import static com.ana.mybank.Constants.getMoneyFormat;
 public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuItemClickListener {
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private CustomCreditCard creditCard;
-    private TransactionsRecyclerAdapter transactionsRecyclerAdapter;
+
+    private SliderAdapter sliderAdapter;
+
+    private UserPojo userData;
+    private ArrayList<CreditCards> creditCardsData;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.loading_layout);
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
-        getDataFromFireStore();
+        getUserDataFromFireStore();
     }
 
-    protected void onCreateTest(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_new);
-        SliderAdapter sliderAdapter = new SliderAdapter(MainActivity.this);
-        ViewPager slideViewPager = (ViewPager) findViewById(R.id.sliderLayout);
-        slideViewPager.setAdapter(sliderAdapter);
-    }
-
-    private void getDataFromFireStore() {
+    private void getUserDataFromFireStore() {
         final DocumentReference docRef = db.collection("Users").document(mAuth.getUid());
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
@@ -71,13 +62,9 @@ public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuIte
                     DocumentSnapshot document = task.getResult();
                     if (document.exists()) {
                         try {
-                            String name = (String) document.getData().get("name");
-                            String lastName =  (String) document.getData().get("lastName");
-                            String accountNumber =  (String) document.getData().get("accountNumber");
-                            String cardNumber =  (String) document.getData().get("cardNumber");
-                            Double balance = Double.valueOf(document.getData().get("balance").toString());
-                            initializeView(name, lastName, accountNumber, cardNumber, balance, docRef);
-                        } catch (IllegalFormatConversionException e) {
+                            userData = task.getResult().toObject(UserPojo.class);
+                            initializeView(docRef);
+                        } catch (ClassCastException e) {
                             Toast.makeText(getApplicationContext(), "Failed to parse user data", Toast.LENGTH_SHORT).show();
                             logout();
                         }
@@ -95,16 +82,38 @@ public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuIte
 
 
 
-    private void initializeView(String name, String lastName, String accountNumber, String cardNumber, final double balance, DocumentReference docRef) {
+    private void initializeView(DocumentReference userDocumentReference) {
         setContentView(R.layout.activity_main);
+        setToolbar(userDocumentReference);
+        setFloatingActionButton();
+        setSlideViewPager();
+    }
+
+    private void setSlideViewPager() {
+        ProgressBar progressBar = findViewById(R.id.progress_bar);
+        progressBar.setVisibility(View.GONE);
+
+        if (userData.getCreditCards() == null || userData.getCreditCards().size() == 0) {
+            TextView textView = findViewById(R.id.textViewError);
+            textView.setVisibility(View.VISIBLE);
+            return;
+        }
+        List<CreditCards> testCards = new ArrayList();
+        sliderAdapter = new SliderAdapter(MainActivity.this, null);
+        ViewPager slideViewPager = (ViewPager) findViewById(R.id.viewPager);
+        slideViewPager.setAdapter(sliderAdapter);
+        getCardsData();
+    }
+
+
+    private void setToolbar(DocumentReference userDocumentReference) {
         MaterialToolbar toolbar = findViewById(R.id.topAppBar);
         toolbar.setOnMenuItemClickListener(this);
         final TextView balanceTextView = toolbar.findViewById(R.id.textViewBalance);
-
-        toolbar.setTitle(""+name+" "+lastName);
-        toolbar.setSubtitle("ID: "+accountNumber);
-        balanceTextView.setText(getMoneyFormat(balance));
-        docRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+        toolbar.setTitle(""+userData.getName()+" "+userData.getLastName());
+        toolbar.setSubtitle("ID: "+userData.getAccountNumber());
+        balanceTextView.setText(getMoneyFormat(userData.getBalance()));
+        userDocumentReference.addSnapshotListener(new EventListener<DocumentSnapshot>() {
             @Override
             public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
                 if(error == null) {
@@ -115,7 +124,9 @@ public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuIte
                 }
             }
         });
+    }
 
+    private void setFloatingActionButton() {
         ExtendedFloatingActionButton extendedFloatingActionButton = findViewById(R.id.fabMakePayment);
         extendedFloatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -124,74 +135,30 @@ public class MainActivity extends AppCompatActivity implements Toolbar.OnMenuIte
                 fragment.show(getSupportFragmentManager(), fragment.getTag());
             }
         });
-        RecyclerView transactionsRecycler = findViewById(R.id.transactionsRecycler);
-        transactionsRecyclerAdapter = new TransactionsRecyclerAdapter();
-        transactionsRecycler.setAdapter(transactionsRecyclerAdapter);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(MainActivity.this);
-        transactionsRecycler.setLayoutManager(layoutManager);
-        transactionsRecycler.addItemDecoration(new DividerItemDecoration(transactionsRecycler.getContext(), layoutManager.getOrientation()));
-
-        creditCard = findViewById(R.id.creditCard);
-        AppCompatTextView cardNumberTextView = creditCard.getRootView().findViewById(R.id.creditcard_card_number_label);
-        cardNumberTextView.setText(cardNumber);
-
-        getTransactions(cardNumber);
     }
 
-    private void getTransactions(final String cardNumber) {
-        final DocumentReference myCardDocumentRef = db.collection("CreditCards").document(cardNumber);
-        myCardDocumentRef.get()
-                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                        if(task.isSuccessful() && task.getResult().exists()) {
-                            DocumentSnapshot cardDocument = task.getResult();
+    private void getCardsData() {
+        List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
+        for (String cardId: userData.getCreditCards()) {
+            DocumentReference documentReference = db.collection("CreditCards").document(cardId);
+            Task<DocumentSnapshot> documentSnapshotTask = documentReference.get();
+            tasks.add(documentSnapshotTask);
+        }
 
-                            AppCompatTextView cardCVV = creditCard.getRootView().findViewById(R.id.creditcard_cvv_label);
-                            cardCVV.setText(cardDocument.getString("securityCode"));
-
-                            List<DocumentReference> transactionsDocuments = (List<DocumentReference>) cardDocument.get("transactions");
-                            if(transactionsDocuments == null) {
-                                createTransactionListener();
-                                return;
-                            }
-
-                            List<Task<DocumentSnapshot>> tasks = new ArrayList<>();
-                            for(DocumentReference documentReference : transactionsDocuments) {
-                                Task<DocumentSnapshot> documentSnapshotTask = documentReference.get();
-                                tasks.add(documentSnapshotTask);
-                            }
-                            Tasks.whenAllSuccess(tasks).addOnSuccessListener(new OnSuccessListener<List<Object>>() {
-                                @Override
-                                public void onSuccess(List<Object> objects) {
-                                    List<TransactionPojo> transactionsList = new ArrayList<>();
-                                    for(Object object : objects) {
-                                        TransactionPojo transactionPojo = ((DocumentSnapshot) object).toObject(TransactionPojo.class);
-                                        transactionsList.add(transactionPojo);
-                                    }
-                                    transactionsRecyclerAdapter.submitData(transactionsList);
-                                    createTransactionListener();
-                                }
-                            });
-                        }
-                    }
-
-                    private void createTransactionListener() {
-                        myCardDocumentRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-                            @Override
-                            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-                                if(error == null) {
-                                    if(snapshot != null && snapshot.exists()) {
-                                        List<DocumentReference>  list = (List<DocumentReference>) snapshot.get("transactions");
-                                        if(list != null && list.size() != transactionsRecyclerAdapter.getItemCount()) {
-                                            getTransactions(cardNumber);
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    }
-                });
+        creditCardsData = new ArrayList<CreditCards>();
+        Tasks.whenAllSuccess(tasks).addOnSuccessListener(new OnSuccessListener<List<Object>>() {
+            @Override
+            public void onSuccess(List<Object> list) {
+                for (Object item: list) {
+                    DocumentSnapshot cardDocument = (DocumentSnapshot) item;
+                    String cardId = cardDocument.getId();
+                    String securityCode = (String) cardDocument.get("securityCode");
+                    List<DocumentReference> transactionsDocuments = (List<DocumentReference>) cardDocument.get("transactions");
+                    creditCardsData.add(new CreditCards(cardId, securityCode, transactionsDocuments));
+                }
+                sliderAdapter.updateDataSet(creditCardsData);
+            }
+        });
     }
 
     @Override

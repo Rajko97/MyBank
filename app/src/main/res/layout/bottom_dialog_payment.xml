@@ -93,7 +93,7 @@
                 android:id="@+id/editTextCardNumber"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
+                android:inputType="numberSigned"
                 android:maxLines="1"
                 android:nextFocusDown="@id/editTextCardPin"/>
         </com.google.android.material.textfield.TextInputLayout>

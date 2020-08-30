@@ -108,7 +108,7 @@ public class PaymentBottomSheetDialogFragment extends BottomSheetDialogFragment 
     private void findUserByCardNumber(final Map<String, Object> requestData) {
         final String cardNumber = (String) requestData.get("cardNumber");
         db.collection("Users")
-                .whereEqualTo("cardNumber", cardNumber)
+                .whereArrayContains("creditCards", cardNumber)
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                     @Override

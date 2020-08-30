@@ -1,11 +1,13 @@
 package com.ana.mybank.model;
 
+import java.util.ArrayList;
+
 public class UserPojo {
     private String name;
     private String lastName;
     private String accountNumber;
     private Double balance;
-    private String cardNumber;
+    private ArrayList<String> creditCards;
 
     public UserPojo() {
     }
@@ -42,11 +44,11 @@ public class UserPojo {
         this.balance = balance;
     }
 
-    public String getCardNumber() {
-        return cardNumber;
+    public ArrayList<String> getCreditCards() {
+        return creditCards;
     }
 
-    public void setCardNumber(String cardNumber) {
-        this.cardNumber = cardNumber;
+    public void setCreditCards(ArrayList<String> creditCards) {
+        this.creditCards = creditCards;
     }
 }
