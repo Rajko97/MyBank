@@ -13,13 +13,15 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.ana.mybank.Constants;
 import com.ana.mybank.R;
 import com.ana.mybank.ui.login.LoginActivity;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -37,8 +39,8 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
     private FirebaseFirestore db;
     private TextInputEditText editName, editLastName, editEmail, editAccountNumber, editCardNumber, editCardPin;
     private TextInputLayout layoutName, layoutLastName, layoutEmail, layoutAccountNumber, layoutCardNumber, layoutCardPin;
-    private MaterialButton submitButton;
-
+    private MaterialButton addCardButton, submitButton;
+    private CardsRecyclerAdapter cardsRecyclerAdapter;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,8 +62,19 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
         layoutLastName = findViewById(R.id.inputLayoutLastName);
         layoutEmail = findViewById(R.id.inputLayoutEmail);
         layoutAccountNumber = findViewById(R.id.inputLayoutAccountNumber);
+
         layoutCardNumber = findViewById(R.id.inputLayoutCardNumber);
         layoutCardPin = findViewById(R.id.inputLayoutCardPin);
+        addCardButton = findViewById(R.id.buttonAddCard);
+        cardsRecyclerAdapter = new CardsRecyclerAdapter();
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(AdminActivity.this);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), layoutManager.getOrientation()));
+        new ItemTouchHelper(itemTouchHelperCallback()).attachToRecyclerView(recyclerView);
+        recyclerView.setAdapter(cardsRecyclerAdapter);
+        addCardButton.setOnClickListener(this);
+
         submitButton = findViewById(R.id.buttonSubmit);
         submitButton.setOnClickListener(this);
     }
@@ -86,29 +99,37 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
 
     @Override
     public void onClick(View v) {
+        if(v.getId() == R.id.buttonAddCard) {
+            String cardNumber = editCardNumber.getText().toString();
+            String cardPin = editCardPin.getText().toString();
+            boolean isCardNumberValid = validateCardNumber(cardNumber);
+            boolean isCardPinValid = validateCardPin(cardPin);
+
+            if(isCardNumberValid && isCardPinValid) {
+                cardsRecyclerAdapter.addCard(cardNumber, cardPin);
+                editCardNumber.setText("");
+                editCardPin.setText("");
+            }
+        }
         if(v.getId() == R.id.buttonSubmit) {
             String name = editName.getText().toString();
             String lastName = editLastName.getText().toString();
             String email = editEmail.getText().toString();
             String accountNumber = editAccountNumber.getText().toString();
-            String cardNumber = editCardNumber.getText().toString();
-            String cardPin = editCardPin.getText().toString();
+
 
             boolean isNameValid = validateName(name);
             boolean isLastNameValid = validateLastName(lastName);
             boolean isEmailValid = validateEmail(email);
             boolean isAccountNumberValid = validateAccountNumber(accountNumber);
-            boolean isCardNumberValid = validateCardNumber(cardNumber);
-            boolean isCardPinValid = validateCardPin(cardPin);
-            if(isNameValid && isLastNameValid && isEmailValid && isAccountNumberValid && isCardNumberValid && isCardPinValid) {
+
+            if(isNameValid && isLastNameValid && isEmailValid && isAccountNumberValid) {
                 submitButton.setEnabled(false);
                 submitButton.setText("Waitting for network...");
                 Map<String, Object> userData = new HashMap<>();
                     userData.put("name", name);
                     userData.put("lastName", lastName);
                     userData.put("accountNumber", accountNumber);
-                    userData.put("cardNumber", cardNumber);
-                    userData.put("securityCode", cardPin);
                     userData.put("balance", 0);
 
                 createNewFirebaseUser(email, Constants.DEFAULT_PASSWORDS, userData);
@@ -116,6 +137,19 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
         }
     }
 
+    private ItemTouchHelper.SimpleCallback itemTouchHelperCallback() {
+        return new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                cardsRecyclerAdapter.removeItem(viewHolder.getAdapterPosition());
+            }
+        };
+    }
     //Creates Firebase user
     private void createNewFirebaseUser(String email, String password, final Map<String, Object> userData) {
         mAuth.createUserWithEmailAndPassword(email, password)
@@ -136,10 +170,7 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
 
     //creates Users/newDocument /CreditCards/newDocument
     private void initializeNewFirestoreUser(String uid, Map<String, Object> userData) {
-        String securityCode = (String) userData.get("securityCode");
-        String cardNumber = (String) userData.get("cardNumber");
-        userData.remove("securityCode");
-
+        userData.put("creditCards", cardsRecyclerAdapter.cardNumber);
         db.collection("Users").document(uid).set(userData)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
@@ -154,8 +185,11 @@ public class AdminActivity extends AppCompatActivity implements View.OnClickList
                     }
                 });
         userData.clear();
-        userData.put("securityCode", securityCode);
-        db.collection("CreditCards").document(cardNumber).set(userData);
+        for(int i = 0; i < cardsRecyclerAdapter.cardNumber.size(); i++) {
+            userData.clear();
+            userData.put("securityCode", cardsRecyclerAdapter.cardPin.get(i));
+            db.collection("CreditCards").document(cardsRecyclerAdapter.cardNumber.get(i)).set(userData);
+        }
     }
 
     private boolean validateName(String name) {

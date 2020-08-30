@@ -97,10 +97,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:layout_marginEnd="4dp"
+        android:layout_marginEnd="2dp"
         android:hint="Enter card number"
         app:errorEnabled="true"
-        app:layout_constraintBottom_toTopOf="@id/buttonSubmit"
+        app:layout_constraintBottom_toTopOf="@id/recyclerView"
         app:layout_constraintEnd_toStartOf="@id/inputLayoutCardPin"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -108,19 +108,19 @@
             android:id="@+id/editTextCardNumber"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text"
+            android:inputType="numberSigned"
             android:maxLines="1"
             android:nextFocusDown="@id/editTextCardPin"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/inputLayoutCardPin"
-        android:layout_width="120dp"
+        android:layout_width="100dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
+        android:layout_marginStart="2dp"
         android:hint="PIN"
         app:errorEnabled="true"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/buttonAddCard"
         app:layout_constraintStart_toEndOf="@id/inputLayoutCardNumber"
         app:layout_constraintTop_toTopOf="@id/inputLayoutCardNumber">
 
@@ -132,6 +132,26 @@
             android:maxLength="4"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonAddCard"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="-32dp"
+        android:layout_width="24dp"
+        android:layout_height="60dp"
+        app:icon="@drawable/ic_add_black_24dp"
+        android:gravity="center"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        app:layout_constraintStart_toEndOf="@id/inputLayoutCardPin"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/inputLayoutCardNumber"
+        app:layout_constraintBottom_toBottomOf="@id/inputLayoutCardNumber"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@id/buttonSubmit"/>
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonSubmit"
         android:layout_width="match_parent"
